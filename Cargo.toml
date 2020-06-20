@@ -14,3 +14,4 @@ name = "server"
 path = "server/src/main.rs"
 
 [dependencies]
+uuid = { version = "0.8", features = ["serde", "v4"] }

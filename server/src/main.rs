@@ -1,7 +1,12 @@
+use core::entity::Entity;
+use std::collections::HashMap;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
+struct Server {
+    entities: HashMap<String, Entity>,
+}
 fn handle_client(mut stream: TcpStream) {
     println!("Client connected!");
     loop {
