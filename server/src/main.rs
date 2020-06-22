@@ -1,72 +1,42 @@
-use core::entity::Entity;
-use core::io::Event;
-use std::collections::HashMap;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
-use std::sync::mpsc;
-use std::sync::Mutex;
+use std::io::{BufReader, Result};
 use std::thread;
+use uuid::Uuid;
 
-struct Client {
-    sender: mpsc::Sender<Event>,
-    receiver: mpsc::Receiver<Event>,
+mod room;
+use crate::room::Room;
+
+struct Server {
 }
 
-impl Client {
-    fn handle_io(&self) {}
-}
+impl Server {
+    fn bind(room: Room) -> Result<()> {
+        let listener = TcpListener::bind("127.0.0.1:3030")?;
+        for stream in listener.incoming() {
+            let stream = stream.unwrap();
+            let room = room.clone();
+            let _       = thread::spawn(move || Server::create_client(room, stream));
+        } Ok(())
+    }
 
-struct Server<'a> {
-    listener: TcpListener,
-    entities: HashMap<&'a str, Entity>,
-    clients: HashMap<&'a str, Client>,
-}
+    fn create_client(room: Room, stream: TcpStream) {
+        let mut reader   = BufReader::new(stream.try_clone().unwrap());
+        let id = Uuid::new_v4().to_string(); 
+        room.join(id, stream);
 
-impl Server<'_> {
-    // Note: blocking
-    fn listen_for_new_clients(&self) {}
-
-    fn handle_client_io(&self, stream: TcpStream) {
-        println!("Client connected!");
-        loop {
-            let mut buffer = [0; 512];
-            match stream.read(&mut buffer) {
-                Ok(0) => break,
-                Err(e) => println!("Error reading from client: {}", e),
-                _ => (),
-            };
-            let packet = String::from_utf8_lossy(&buffer[..]);
-            println!("Request: {}", packet);
+        let mut buffer   = String::new();
+        while let Ok(_) = reader.read_line(&mut buffer) {
+            room.broadcast(&buffer);
+            buffer.clear();
         }
-
-        println!("Client disconnected!");
+        println!("Error reading from client")
     }
 }
 
 fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:3030")?;
-    let entities: HashMap<&str, Entity> = HashMap::new();
-    let clients: HashMap<&str, Client> = HashMap::new();
-
-    let server = Server {
-        entities,
-        clients,
-        listener,
-    };
-
-    thread::spawn(move || {
-        for stream in listener.incoming() {
-            let stream = stream.unwrap();
-            thread::spawn(move || {
-                handle_client_io(stream);
-            });
-            let (sender, receiver) = mpsc::channel();
-            let client = Client {
-                sender: sender,
-                receiver: receiver,
-            };
-        }
-    });
+    let room = Room::new();
+    let server = Server::bind(room);
 
     Ok(())
 }

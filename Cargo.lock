@@ -146,7 +146,7 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
- "core 0.1.0",
+ "uuid 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
