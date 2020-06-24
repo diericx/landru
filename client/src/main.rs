@@ -1,18 +1,32 @@
 use core::entity;
 use std::io::prelude::*;
 use std::net::TcpStream;
+use std::io::{stdin,stdout,Write};
+
+fn render(msgs: &Vec<String>) {
+    for msg in msgs {
+        // Note: should be println but we aren't stripping newline from msg
+        print!("Zac: {}", msg);
+    }
+}
 
 fn main() -> std::io::Result<()> {
-    let entity = entity::Entity::new(entity::Kind::Player);
-    let serialized: String = entity.serialize();
-    println!("{:#?}", entity);
+    let mut messages = vec![];
 
-    let test = core::io::Event::New(entity);
-    let serialized_test = test.serialize();
-    println!("{:#?}", serialized_test);
+    print!("{}[2J", 27 as char);
+    
+    loop {
+        let mut s = String::new();
+        print!(">> ");
 
-    let mut stream = TcpStream::connect("127.0.0.1:3030")?;
-    stream.write(serialized.as_bytes()).unwrap();
+        let _=stdout().flush();
+        stdin().read_line(&mut s).expect("Did not enter a correct string");
 
+        print!("{}[2J", 27 as char);
+
+        messages.push(s);
+        render(&messages);
+
+    }
     Ok(())
 }
